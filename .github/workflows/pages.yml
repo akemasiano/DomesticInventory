@@ -1,0 +1,49 @@
+name: Deploy DomesticInventory to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare website
+        run: |
+          mkdir _site
+          cp index.html styles.css app.js supabase-config.js sw.js manifest.webmanifest _site/
+          cp -r vendor icons _site/
+
+      - name: Version offline cache
+        env:
+          BUILD_ID: ${{ github.sha }}
+        run: |
+          node -e 'const fs = require("node:fs"); const file = "_site/sw.js"; fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/const CACHE_NAME = .*;/, "const CACHE_NAME = " + JSON.stringify("domestic-inventory-" + process.env.BUILD_ID) + ";"));'
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

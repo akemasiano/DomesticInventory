@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f4ef">
+  <meta name="description" content="Retrouvez facilement les appareils et documents de votre maison.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Maison">
+  <title>Maison — Mon inventaire</title>
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./vendor/supabase.js" defer></script>
+  <script src="./supabase-config.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <section class="auth-gate" id="auth-gate" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <a class="wordmark" href="#" aria-label="Maison"><span class="mark">m.</span><span>maison<span class="wordmark-dot">.</span></span></a>
+      <p class="eyebrow">VOTRE MAISON, BIEN DOCUMENTÉE</p>
+      <h1 id="auth-title">Connexion privée</h1>
+      <p>Connectez-vous avec un compte autorisé pour accéder à l’inventaire partagé.</p>
+      <form id="auth-form">
+        <label>Adresse e-mail<input type="email" id="auth-email" autocomplete="username" required></label>
+        <label>Mot de passe<input type="password" id="auth-password" autocomplete="current-password" required></label>
+        <button class="save-button" type="submit">Se connecter <span>→</span></button>
+      </form>
+      <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
+      <small>Les comptes sont créés et autorisés par l’administrateur.</small>
+    </div>
+  </section>
+  <div class="app-shell" id="app-shell" hidden>
+    <header class="topbar">
+      <a class="wordmark" href="#accueil" aria-label="Maison, accueil"><span class="mark">m.</span><span>maison<span class="wordmark-dot">.</span></span></a>
+      <div class="account-control"><span id="account-name" class="account-name"></span><button class="avatar" id="sign-out" type="button" aria-label="Se déconnecter">M</button></div>
+    </header>
+    <main>
+      <section class="hero" id="accueil">
+        <p class="eyebrow">VOTRE MAISON, BIEN DOCUMENTÉE</p>
+        <h1>Tout est<br><em>à sa place.</em></h1>
+        <p class="hero-copy">Vos appareils et leurs modes d’emploi, toujours à portée de main.</p>
+        <div class="hero-stats"><span class="stat-number" id="item-count">4</span><span>appareils<br>dans votre maison</span><span class="stat-divider"></span><span class="stat-room">3 pièces</span></div>
+      </section>
+      <div class="sync-banner" id="sync-banner"><span class="sync-dot"></span><span><b id="sync-label">Accès autorisé</b><small id="sync-detail">Connexion à l’inventaire…</small></span><span class="sync-check" id="sync-indicator">…</span></div>
+      <section class="conflict-notice" id="conflict-notice" hidden aria-labelledby="conflict-title">
+        <h2 id="conflict-title">Modifications à rapprocher</h2>
+        <p>Le même élément a été modifié sur plusieurs appareils. Choisissez la version à garder pour chaque conflit ; les autres changements seront fusionnés.</p>
+        <div id="conflict-items"></div>
+      </section>
+
+      <section class="inventory-section" aria-labelledby="inventory-heading">
+        <div class="section-top">
+          <div><p class="eyebrow">VOTRE INVENTAIRE</p><h2 id="inventory-heading">Les appareils</h2></div>
+          <button class="add-button" id="add-item" type="button"><span>+</span><span class="add-label">Ajouter</span></button>
+        </div>
+        <label class="searchbox"><span class="search-icon" aria-hidden="true"></span><span class="sr-only">Rechercher un appareil</span><input id="search" type="search" placeholder="Marque, modèle, appareil…"></label>
+        <div class="room-filters" role="group" aria-label="Filtrer par pièce">
+          <button class="filter active" data-room="all" type="button">Tout <span>0</span></button>
+          <button class="filter" data-room="Cuisine" type="button">Cuisine <span>0</span></button>
+          <button class="filter" data-room="Salon" type="button">Salon <span>0</span></button>
+          <button class="filter" data-room="Buanderie" type="button">Buanderie <span>0</span></button>
+        </div>
+        <div class="device-list" id="device-list" aria-live="polite"></div>
+        <p class="empty-state" id="empty-state" hidden>Aucun appareil ne correspond à cette recherche.</p>
+      </section>
+
+      <section class="room-section" aria-labelledby="rooms-heading">
+        <div class="section-top room-heading"><div><p class="eyebrow">NAVIGUER AUTREMENT</p><h2 id="rooms-heading">Par pièce</h2></div><span class="tiny-note">3 espaces</span></div>
+        <div class="room-grid">
+          <button class="room-tile kitchen" data-room-shortcut="Cuisine" type="button"><span class="room-icon">⌂</span><span><b>Cuisine</b><small>2 appareils</small></span><span class="room-arrow">↗</span></button>
+          <button class="room-tile living" data-room-shortcut="Salon" type="button"><span class="room-icon">⌂</span><span><b>Salon</b><small>1 appareil</small></span><span class="room-arrow">↗</span></button>
+          <button class="room-tile laundry" data-room-shortcut="Buanderie" type="button"><span class="room-icon">⌂</span><span><b>Buanderie</b><small>1 appareil</small></span><span class="room-arrow">↗</span></button>
+        </div>
+      </section>
+      <section class="documents-section" id="documents" aria-labelledby="documents-heading">
+        <div class="section-top room-heading"><div><p class="eyebrow">MANUELS ET JUSTIFICATIFS</p><h2 id="documents-heading">Documents</h2></div><span class="tiny-note" id="document-count">0 fichier</span></div>
+        <div id="document-list" class="document-list"></div>
+        <p class="empty-state" id="documents-empty">Les PDF ajoutés aux appareils apparaîtront ici.</p>
+      </section>
+      <footer class="footer-note"><span class="lock-icon">⌑</span> Vos documents restent privés et accessibles depuis vos appareils.</footer>
+    </main>
+    <nav class="bottom-nav" aria-label="Navigation principale">
+      <a class="nav-item selected" href="#accueil"><span class="nav-icon">▦</span><span>Inventaire</span></a>
+      <a class="nav-item" href="#rooms-heading"><span class="nav-icon">⌂</span><span>Pièces</span></a>
+      <button class="nav-add" id="nav-add" aria-label="Ajouter un appareil" type="button">+</button>
+      <a class="nav-item" href="#documents"><span class="nav-icon">▤</span><span>Documents</span></a>
+      <button class="nav-item" id="more-button" type="button"><span class="nav-icon">···</span><span>Plus</span></button>
+    </nav>
+  </div>
+
+  <dialog id="device-dialog" class="device-dialog">
+    <form method="dialog" class="dialog-card" id="device-form">
+      <button class="close-dialog" value="cancel" aria-label="Fermer" type="submit">×</button>
+      <p class="eyebrow">VOTRE MAISON S’AGRANDIT</p><h2>Ajouter un appareil</h2>
+      <label>Nom de l’appareil<input name="name" placeholder="Ex. Réfrigérateur" required></label>
+      <div class="form-row"><label>Pièce<select name="room"><option>Cuisine</option><option>Salon</option><option>Buanderie</option><option>Autre</option></select></label><label>Marque<input name="brand" placeholder="Ex. Bosch"></label></div>
+      <label>Modèle <span class="optional">(facultatif)</span><input name="model" placeholder="Référence du modèle"></label>
+      <div class="form-row"><label>Numéro de série <span class="optional">(facultatif)</span><input name="serialNumber"></label><label>Date d’achat <span class="optional">(facultatif)</span><input name="purchaseDate" type="date"></label></div>
+      <label>Fin de garantie <span class="optional">(facultatif)</span><input name="warranty" type="date"></label>
+      <label class="upload-placeholder" for="device-document"><span>＋</span><div><b>Ajouter le mode d’emploi</b><small>PDF · jusqu’à 20 Mo</small></div><span class="upload-arrow">↗</span><input id="device-document" name="document" type="file" accept="application/pdf,.pdf" hidden></label>
+      <label>Notes <span class="optional">(facultatif)</span><textarea name="notes" rows="2" maxlength="5000" placeholder="Informations utiles sur l’appareil"></textarea></label>
+      <button class="save-button" value="default" type="submit">Ajouter à mon inventaire <span>→</span></button>
+    </form>
+  </dialog>
+  <dialog id="detail-dialog" class="device-dialog detail-dialog">
+    <div class="dialog-card detail-card">
+      <button class="close-dialog" id="close-detail" aria-label="Fermer" type="button">×</button>
+      <p class="eyebrow">FICHE DE L’APPAREIL</p>
+      <div class="detail-device-icon" id="detail-icon">🧊</div>
+      <h2 id="detail-name">Réfrigérateur combiné</h2>
+      <p id="detail-subtitle" class="detail-subtitle"></p>
+      <div class="detail-warranty" id="detail-warranty"></div>
+      <div class="detail-files" id="detail-files"></div>
+      <button type="button" class="save-button" id="edit-device">Modifier la fiche <span>✎</span></button>
+    </div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
